@@ -41,6 +41,7 @@ static const char *TAG="httpd_ws";
  */
 #define HTTPD_WS_CONTINUE       0x00U
 #define HTTPD_WS_FIN_BIT        0x80U
+#define HTTPD_WS_RSV1_BIT       0x40U
 #define HTTPD_WS_OPCODE_BITS    0x0fU
 #define HTTPD_WS_MASK_BIT       0x80U
 #define HTTPD_WS_LENGTH_BITS    0x7fU
@@ -264,6 +265,7 @@ esp_err_t httpd_ws_recv_frame(httpd_req_t *req, httpd_ws_frame_t *frame, size_t 
         /* Assign the frame info from the previous reading */
         frame->type = aux->ws_type;
         frame->final = aux->ws_final;
+        frame->rsv1 = aux->ws_rsv1;
 
         /* Grab the second byte */
         uint8_t second_byte = 0;
@@ -467,6 +469,7 @@ esp_err_t httpd_ws_get_frame_type(httpd_req_t *req)
 
     /* Decode the FIN flag and Opcode from the byte */
     aux->ws_final = (first_byte & HTTPD_WS_FIN_BIT) != 0;
+    aux->ws_rsv1 = (first_byte & HTTPD_WS_RSV1_BIT) != 0;
     aux->ws_type = (first_byte & HTTPD_WS_OPCODE_BITS);
 
     /* If userspace requests control frames, do not deal with the control frames */

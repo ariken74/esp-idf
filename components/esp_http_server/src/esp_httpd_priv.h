@@ -104,6 +104,7 @@ struct httpd_req_aux {
     bool ws_handshake_detect;                       /*!< WebSocket handshake detection flag */
     httpd_ws_type_t ws_type;                        /*!< WebSocket frame type */
     bool ws_final;                                  /*!< WebSocket FIN bit (final frame or not) */
+    bool ws_rsv1;                                      /*!< WebSocket RSV1 bit (compressed packet) */
     uint8_t mask_key[4];                            /*!< WebSocket mask key for this payload */
 #endif
 };

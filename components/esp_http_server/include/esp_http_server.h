@@ -1702,6 +1702,7 @@ typedef struct httpd_ws_frame {
     bool fragmented;            /*!< Indication that the frame allocated for transmission is a message fragment,
                                      so the `FIN` flag is set manually according to the `final` option.
                                      This flag is never set for received messages */
+    bool rsv1;                  /*!< Per packet deflate flag */
     httpd_ws_type_t type;       /*!< WebSocket frame type */
     uint8_t *payload;           /*!< Pre-allocated data buffer */
     size_t len;                 /*!< Length of the WebSocket data */
