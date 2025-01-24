@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: 2015-2024 Espressif Systems (Shanghai) CO LTD
+ * SPDX-FileCopyrightText: 2015-2025 Espressif Systems (Shanghai) CO LTD
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -13,6 +13,7 @@
 
 #include "esp_log.h"
 #include "esp_chip_info.h"
+#include "esp_app_format.h"
 
 #include "esp_private/cache_err_int.h"
 #include "esp_clk_internal.h"
@@ -40,7 +41,6 @@
 #include "soc/assist_debug_reg.h"
 #include "soc/system_reg.h"
 #include "esp32s3/rom/opi_flash.h"
-#include "hal/cache_hal.h"
 #elif CONFIG_IDF_TARGET_ESP32C3
 #include "esp32c3/rtc.h"
 #include "esp32c3/rom/cache.h"
@@ -98,6 +98,7 @@
 #include "esp_private/sleep_gpio.h"
 #include "hal/wdt_hal.h"
 #include "soc/rtc.h"
+#include "hal/cache_hal.h"
 #include "hal/cache_ll.h"
 #include "hal/efuse_ll.h"
 #include "soc/periph_defs.h"
@@ -463,6 +464,11 @@ void IRAM_ATTR call_start_cpu0(void)
     do_multicore_settings();
 #endif
 
+#if !CONFIG_APP_BUILD_TYPE_PURE_RAM_APP
+    //cache hal ctx needs to be initialised
+    cache_hal_init();
+#endif
+
     // When the APP is loaded into ram for execution, some hardware initialization behaviors
     // in the bootloader are still necessary
 #if CONFIG_APP_BUILD_TYPE_RAM
@@ -797,9 +803,13 @@ void IRAM_ATTR call_start_cpu0(void)
     // Read the application binary image header. This will also decrypt the header if the image is encrypted.
     __attribute__((unused)) esp_image_header_t fhdr = {0};
 
-    // This assumes that DROM is the first segment in the application binary, i.e. that we can read
-    // the binary header through cache by accessing SOC_DROM_LOW address.
-    hal_memcpy(&fhdr, (void *) SOC_DROM_LOW, sizeof(fhdr));
+    // We can access the image header through the cache by reading from the memory-mapped virtual DROM start offset
+    uint32_t fhdr_src_addr = (uint32_t)(&_rodata_reserved_start) - sizeof(esp_image_header_t) - sizeof(esp_image_segment_header_t);
+    hal_memcpy(&fhdr, (void *) fhdr_src_addr, sizeof(fhdr));
+    if (fhdr.magic != ESP_IMAGE_HEADER_MAGIC) {
+        ESP_EARLY_LOGE(TAG, "Invalid app image header");
+        abort();
+    }
 
 #if CONFIG_IDF_TARGET_ESP32
 #if !CONFIG_SPIRAM_BOOT_INIT

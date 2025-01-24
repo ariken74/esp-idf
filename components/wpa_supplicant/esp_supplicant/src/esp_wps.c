@@ -838,6 +838,10 @@ int wps_finish(void)
         /* WPS finished, dequeue all timers */
         wps_delete_timer();
 
+        esp_wifi_unset_appie_internal(WIFI_APPIE_WPS_PR);
+        esp_wifi_unset_appie_internal(WIFI_APPIE_WPS_AR);
+        esp_wifi_set_wps_cb_internal(NULL);
+
         if (sm->ap_cred_cnt == 1) {
             wifi_config_t *config = os_zalloc(sizeof(wifi_config_t));
 
@@ -930,7 +934,7 @@ int wps_start_msg_timer(void)
         ret = 0;
     } else if (sm->wps->state == RECV_M2) {
         msg_timeout = 5;
-        wpa_printf(MSG_DEBUG, "start msg timer RECV_M2 %" PRId32 " ms", msg_timeout);
+        wpa_printf(MSG_DEBUG, "start msg timer RECV_M2 %" PRId32 " s", msg_timeout);
 	eloop_cancel_timeout(wifi_station_wps_msg_timeout, NULL, NULL);
 	eloop_register_timeout(msg_timeout, 0, wifi_station_wps_msg_timeout, NULL, NULL);
         ret = 0;

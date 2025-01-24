@@ -23,7 +23,7 @@ if(CONFIG_OPENTHREAD_ENABLED)
         "openthread/src/ncp"
         "private_include")
 
-        set(src_dirs
+    set(src_dirs
         "src"
         "src/port"
         "openthread/examples/platforms/utils"
@@ -244,6 +244,12 @@ elseif(CONFIG_OPENTHREAD_SPINEL_ONLY)
 
 endif()
 
+if(CONFIG_OPENTHREAD_HEADER_CUSTOM)
+    idf_build_get_property(project_dir PROJECT_DIR)
+    list(APPEND private_include_dirs
+        "${project_dir}/${CONFIG_OPENTHREAD_CUSTOM_HEADER_PATH}")
+endif()
+
 execute_process(
     COMMAND git rev-parse --short HEAD
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
@@ -268,7 +274,7 @@ idf_component_register(SRC_DIRS "${src_dirs}"
                        PRIV_INCLUDE_DIRS "${private_include_dirs}"
                        REQUIRES esp_netif lwip esp_driver_uart driver
                        LDFRAGMENTS linker.lf
-                       PRIV_REQUIRES console esp_event esp_partition esp_timer
+                       PRIV_REQUIRES console esp_coex esp_event esp_partition esp_timer
                                      ieee802154 mbedtls nvs_flash)
 
 if(CONFIG_OPENTHREAD_RADIO_TREL)

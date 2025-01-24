@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: 2015-2024 Espressif Systems (Shanghai) CO LTD
+ * SPDX-FileCopyrightText: 2015-2025 Espressif Systems (Shanghai) CO LTD
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -88,6 +88,8 @@ typedef enum {
     WIFI_AUTH_WPA3_EXT_PSK,     /**< This authentication mode will yield same result as WIFI_AUTH_WPA3_PSK and not recommended to be used. It will be deprecated in future, please use WIFI_AUTH_WPA3_PSK instead. */
     WIFI_AUTH_WPA3_EXT_PSK_MIXED_MODE, /**< This authentication mode will yield same result as WIFI_AUTH_WPA3_PSK and not recommended to be used. It will be deprecated in future, please use WIFI_AUTH_WPA3_PSK instead.*/
     WIFI_AUTH_DPP,              /**< Authenticate mode : DPP */
+    WIFI_AUTH_WPA3_ENTERPRISE,  /**< authenticate mode : WPA3-Enterprise Only Mode */
+    WIFI_AUTH_WPA2_WPA3_ENTERPRISE, /**< authenticate mode : WPA3-Enterprise Transition Mode */
     WIFI_AUTH_MAX
 } wifi_auth_mode_t;
 
@@ -100,10 +102,13 @@ typedef enum {
     WIFI_REASON_UNSPECIFIED                        = 1,     /**< Unspecified reason */
     WIFI_REASON_AUTH_EXPIRE                        = 2,     /**< Authentication expired */
     WIFI_REASON_AUTH_LEAVE                         = 3,     /**< Deauthentication due to leaving */
-    WIFI_REASON_ASSOC_EXPIRE                       = 4,     /**< Association expired */
+    WIFI_REASON_ASSOC_EXPIRE                       = 4,     /**< Association expired. Deprecated, will be removed in next IDF major release */
+    WIFI_REASON_DISASSOC_DUE_TO_INACTIVITY         = 4,
     WIFI_REASON_ASSOC_TOOMANY                      = 5,     /**< Too many associated stations */
-    WIFI_REASON_NOT_AUTHED                         = 6,     /**< Not authenticated */
-    WIFI_REASON_NOT_ASSOCED                        = 7,     /**< Not associated */
+    WIFI_REASON_NOT_AUTHED                         = 6,     /**< Not authenticated. Deprecated, will be removed in next IDF major release */
+    WIFI_REASON_CLASS2_FRAME_FROM_NONAUTH_STA      = 6,
+    WIFI_REASON_NOT_ASSOCED                        = 7,     /**< Not associated. Deprecated, will be removed in next IDF major release */
+    WIFI_REASON_CLASS3_FRAME_FROM_NONASSOC_STA     = 7,
     WIFI_REASON_ASSOC_LEAVE                        = 8,     /**< Deassociated due to leaving */
     WIFI_REASON_ASSOC_NOT_AUTHED                   = 9,     /**< Association but not authenticated */
     WIFI_REASON_DISASSOC_PWRCAP_BAD                = 10,    /**< Disassociated due to poor power capability */
@@ -144,7 +149,6 @@ typedef enum {
     WIFI_REASON_INVALID_FTE                        = 51,    /**< Invalid FTE */
     WIFI_REASON_TRANSMISSION_LINK_ESTABLISH_FAILED = 67,    /**< Transmission link establishment failed */
     WIFI_REASON_ALTERATIVE_CHANNEL_OCCUPIED        = 68,    /**< Alternative channel occupied */
-
     WIFI_REASON_BEACON_TIMEOUT                     = 200,    /**< Beacon timeout */
     WIFI_REASON_NO_AP_FOUND                        = 201,    /**< No AP found */
     WIFI_REASON_AUTH_FAIL                          = 202,    /**< Authentication failed */
@@ -405,8 +409,8 @@ typedef struct {
     uint8_t ssid_hidden;        /**< Broadcast SSID or not, default 0, broadcast the SSID */
     uint8_t max_connection;     /**< Max number of stations allowed to connect in */
     uint16_t beacon_interval;   /**< Beacon interval which should be multiples of 100. Unit: TU(time unit, 1 TU = 1024 us). Range: 100 ~ 60000. Default value: 100 */
-    uint8_t csa_count;          /**< Channel Switch Announcement Count. Notify the station that the channel will switch after the csa_count beacon intervals. Default value: 3 */
-    uint8_t dtim_period;        /**< Dtim period of soft-AP. Default value: 2 */
+    uint8_t csa_count;          /**< Channel Switch Announcement Count. Notify the station that the channel will switch after the csa_count beacon intervals. Range: 1 ~ 30. Default value: 3 */
+    uint8_t dtim_period;        /**< Dtim period of soft-AP. Range: 1 ~ 10. Default value: 1 */
     wifi_cipher_type_t pairwise_cipher;   /**< Pairwise cipher of SoftAP, group cipher will be derived using this. Cipher values are valid starting from WIFI_CIPHER_TYPE_TKIP, enum values before that will be considered as invalid and default cipher suites(TKIP+CCMP) will be used. Valid cipher suites in softAP mode are WIFI_CIPHER_TYPE_TKIP, WIFI_CIPHER_TYPE_CCMP and WIFI_CIPHER_TYPE_TKIP_CCMP. */
     bool ftm_responder;         /**< Enable FTM Responder mode */
     wifi_pmf_config_t pmf_cfg;  /**< Configuration for Protected Management Frame */
@@ -1208,6 +1212,17 @@ typedef enum {
     WIFI_BAND_5G = 2,                   /* Band is 5G */
     WIFI_BAND_2G_5G = 3,                /* Band is 2,4G + 5G */
 } wifi_band_t;
+
+/**
+  * @brief Argument structure for wifi_tx_rate_config
+  */
+typedef struct {
+    wifi_phy_mode_t phymode;                 /**< Phymode of specified interface */
+    wifi_phy_rate_t rate;                    /**< Rate of specified interface */
+    bool ersu;                               /**< Using ERSU to send frame, ERSU is a transmission mode related to 802.11 ax.
+                                                  ERSU is always used in long distance transmission, and its frame has lower rate compared with SU mode */
+    bool dcm;                                /**< Using dcm rate to send frame */
+} wifi_tx_rate_config_t;
 
 #ifdef __cplusplus
 }

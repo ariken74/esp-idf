@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: 2015-2024 Espressif Systems (Shanghai) CO LTD
+ * SPDX-FileCopyrightText: 2015-2025 Espressif Systems (Shanghai) CO LTD
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -199,6 +199,9 @@ static void esp_bt_ctrl_log_partition_get_and_erase_first_block(void);
 /* Local variable definition
  ***************************************************************************
  */
+#if (CONFIG_ESP32C2_REV_MIN_FULL < 200) && (!CONFIG_BT_CTRL_RUN_IN_FLASH_ONLY)
+void *g_ble_lll_rfmgmt_env_p;
+#endif
 /* Static variable declare */
 static DRAM_ATTR esp_bt_controller_status_t ble_controller_status = ESP_BT_CONTROLLER_STATUS_IDLE;
 #if CONFIG_BT_LE_CONTROLLER_LOG_ENABLED
@@ -445,6 +448,17 @@ static DRAM_ATTR esp_pm_lock_handle_t s_pm_lock = NULL;
 static DRAM_ATTR modem_clock_lpclk_src_t s_bt_lpclk_src = MODEM_CLOCK_LPCLK_SRC_INVALID;
 
 #define BLE_RTC_DELAY_US                    (1800)
+
+#define BLE_CONTROLLER_MALLOC_CAPS          (MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT|MALLOC_CAP_DMA)
+void *malloc_ble_controller_mem(size_t size)
+{
+    return heap_caps_malloc(size, BLE_CONTROLLER_MALLOC_CAPS);
+}
+
+uint32_t get_ble_controller_free_heap_size(void)
+{
+    return heap_caps_get_free_size(BLE_CONTROLLER_MALLOC_CAPS);
+}
 
 static const struct osi_coex_funcs_t s_osi_coex_funcs_ro = {
     ._magic = OSI_COEX_MAGIC_VALUE,
@@ -1133,9 +1147,17 @@ esp_err_t esp_ble_tx_power_set(esp_ble_power_type_t power_type, esp_power_level_
 
     switch (power_type) {
     case ESP_BLE_PWR_TYPE_DEFAULT:
-    case ESP_BLE_PWR_TYPE_ADV:
-    case ESP_BLE_PWR_TYPE_SCAN:
         if (ble_txpwr_set(ESP_BLE_ENHANCED_PWR_TYPE_DEFAULT, 0, power_level) == 0) {
+            stat = ESP_OK;
+        }
+        break;
+    case ESP_BLE_PWR_TYPE_ADV:
+        if (ble_txpwr_set(ESP_BLE_ENHANCED_PWR_TYPE_ADV, 0xFF, power_level) == 0) {
+            stat = ESP_OK;
+        }
+        break;
+    case ESP_BLE_PWR_TYPE_SCAN:
+        if (ble_txpwr_set(ESP_BLE_ENHANCED_PWR_TYPE_SCAN, 0, power_level) == 0) {
             stat = ESP_OK;
         }
         break;
@@ -1165,9 +1187,13 @@ esp_err_t esp_ble_tx_power_set_enhanced(esp_ble_enhanced_power_type_t power_type
     esp_err_t stat = ESP_FAIL;
     switch (power_type) {
     case ESP_BLE_ENHANCED_PWR_TYPE_DEFAULT:
+        if (ble_txpwr_set(ESP_BLE_ENHANCED_PWR_TYPE_DEFAULT, 0, power_level) == 0) {
+            stat = ESP_OK;
+        }
+        break;
     case ESP_BLE_ENHANCED_PWR_TYPE_SCAN:
     case ESP_BLE_ENHANCED_PWR_TYPE_INIT:
-        if (ble_txpwr_set(ESP_BLE_ENHANCED_PWR_TYPE_DEFAULT, 0, power_level) == 0) {
+        if (ble_txpwr_set(ESP_BLE_ENHANCED_PWR_TYPE_SCAN, 0, power_level) == 0) {
             stat = ESP_OK;
         }
         break;
@@ -1190,10 +1216,14 @@ esp_power_level_t esp_ble_tx_power_get(esp_ble_power_type_t power_type)
     int tx_level = 0;
 
     switch (power_type) {
-    case ESP_BLE_PWR_TYPE_ADV:
-    case ESP_BLE_PWR_TYPE_SCAN:
     case ESP_BLE_PWR_TYPE_DEFAULT:
         tx_level = ble_txpwr_get(ESP_BLE_ENHANCED_PWR_TYPE_DEFAULT, 0);
+        break;
+    case ESP_BLE_PWR_TYPE_ADV:
+        tx_level = ble_txpwr_get(ESP_BLE_ENHANCED_PWR_TYPE_ADV, 0);
+        break;
+    case ESP_BLE_PWR_TYPE_SCAN:
+        tx_level = ble_txpwr_get(ESP_BLE_ENHANCED_PWR_TYPE_SCAN, 0);
         break;
     case ESP_BLE_PWR_TYPE_CONN_HDL0:
     case ESP_BLE_PWR_TYPE_CONN_HDL1:
@@ -1223,9 +1253,11 @@ esp_power_level_t esp_ble_tx_power_get_enhanced(esp_ble_enhanced_power_type_t po
 
     switch (power_type) {
     case ESP_BLE_ENHANCED_PWR_TYPE_DEFAULT:
+        tx_level = ble_txpwr_get(ESP_BLE_ENHANCED_PWR_TYPE_DEFAULT, 0);
+        break;
     case ESP_BLE_ENHANCED_PWR_TYPE_SCAN:
     case ESP_BLE_ENHANCED_PWR_TYPE_INIT:
-        tx_level = ble_txpwr_get(ESP_BLE_ENHANCED_PWR_TYPE_DEFAULT, 0);
+        tx_level = ble_txpwr_get(ESP_BLE_ENHANCED_PWR_TYPE_SCAN, 0);
         break;
     case ESP_BLE_ENHANCED_PWR_TYPE_ADV:
     case ESP_BLE_ENHANCED_PWR_TYPE_CONN:

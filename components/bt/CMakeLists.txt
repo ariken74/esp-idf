@@ -753,6 +753,7 @@ if(CONFIG_BT_ENABLED)
                     "host/nimble/nimble/nimble/host/store/config/src/ble_store_nvs.c"
                     "host/nimble/nimble/nimble/host/src/ble_gattc_cache.c"
                     "host/nimble/nimble/nimble/host/src/ble_gattc_cache_conn.c"
+                    "host/nimble/nimble/nimble/host/src/ble_eatt.c"
                 )
 
             if(CONFIG_BT_CONTROLLER_DISABLED AND CONFIG_BT_NIMBLE_TRANSPORT_UART)
@@ -901,7 +902,7 @@ if(CONFIG_BT_ENABLED)
         if(CONFIG_IDF_TARGET_ESP32C6)
             add_prebuilt_library(libble_app "controller/lib_${target}/${target}-bt-lib/esp32c6/libble_app.a")
         else()
-            if(CONFIG_BT_CTRL_RUN_IN_FLASH_ONLY)
+            if(CONFIG_BT_CTRL_RUN_IN_FLASH_ONLY AND CONFIG_IDF_TARGET_ESP32C2)
                 add_prebuilt_library(libble_app "controller/lib_${target}/${target}-bt-lib/libble_app_flash.a")
             else()
                 add_prebuilt_library(libble_app "controller/lib_${target}/${target}-bt-lib/libble_app.a")
